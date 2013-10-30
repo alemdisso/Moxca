@@ -45,7 +45,7 @@ class Moxca_Form_PostCreate extends Zend_Form
                 ->setSeparator('');
         $this->addElement($element);
 
-        $mapper = new Moxca_Blog_TaxonomyMapper();
+        $mapper = new Moxca_Taxonomy_TaxonomyMapper();
         $labelsArray = $mapper->getAllCategoriesAlphabeticallyOrdered();
 
         $element = new Zend_Form_Element_Select('category');

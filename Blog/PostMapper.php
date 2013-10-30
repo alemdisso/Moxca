@@ -52,7 +52,7 @@ class Moxca_Blog_PostMapper
         $obj->setId((int)$this->db->lastInsertId());
         $this->identityMap[$obj] = $obj->getId();
 
-        $taxonomyMapper = new Moxca_Blog_TaxonomyMapper($this->db);
+        $taxonomyMapper = new Moxca_Taxonomy_TaxonomyMapper($this->db);
         $taxonomyMapper->insertPostCategoryRelationShip($obj);
 
 
@@ -164,8 +164,8 @@ class Moxca_Blog_PostMapper
     {
 
         $query = $this->db->prepare('SELECT tx.term_id
-                FROM moxca_blog_term_relationships tr
-                LEFT JOIN moxca_blog_terms_taxonomy tx ON tr.term_taxonomy = tx.id
+                FROM moxca_terms_relationships tr
+                LEFT JOIN moxca_terms_taxonomy tx ON tr.term_taxonomy = tx.id
                 WHERE tr.object = :id
                 AND tx.taxonomy =  \'category\'');
         $query->bindValue(':id', $id, PDO::PARAM_STR);
