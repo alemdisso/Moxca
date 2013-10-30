@@ -22,24 +22,36 @@ class Moxca_Taxonomy_TaxonomyMapper
 
         $query->execute();
 
+        return (int)$this->db->lastInsertId();
+
+
+    }
+
+    public function insertRelationship($postId, $termTaxonomyId)
+    {
+
+        $query = $this->db->prepare("INSERT INTO moxca_terms_relationships (object, term_taxonomy)
+            VALUES (:postId, :termTaxonomy)");
+
+        $query->bindValue(':postId', $postId, PDO::PARAM_STR);
+        $query->bindValue(':termTaxonomy', $termTaxonomyId, PDO::PARAM_STR);
+        $query->execute();
+
+        $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = count + 1
+            WHERE id = :termTaxonomy;");
+        $query->bindValue(':termTaxonomy', $termTaxonomyId, PDO::PARAM_STR);
+        $query->execute();
+
+
+
     }
 
     public function insertPostCategoryRelationShip(Moxca_Blog_Post $obj)
     {
-
-        $termTaxonomy = $this->existsCategory($obj->getCategory());
-        if (!$termTaxonomy) {
-            $termTaxonomy = $this->insertCategory($obj->getCategory());
+        if ($obj->getCategory() > 0) {
+            $termTaxonomy = $this->createCategoryIfNeeded($obj->getCategory());
+            $this->insertRelationship($obj->getId(), $termTaxonomy);
         }
-        $query = $this->db->prepare("INSERT INTO moxca_terms_relationships (object, term_taxonomy)
-            VALUES (:postId, :termTaxonomy)");
-
-        $query->bindValue(':postId', $obj->getId(), PDO::PARAM_STR);
-        $query->bindValue(':termTaxonomy', $termTaxonomy, PDO::PARAM_STR);
-
-        $query->execute();
-
-
     }
 
     public function existsCategory($termId)
@@ -59,20 +71,43 @@ class Moxca_Taxonomy_TaxonomyMapper
         }
     }
 
-    public function update(Moxca_Taxonomy_Taxonomy $obj)
+    public function updatePostCategoryRelationShip(Moxca_Blog_Post $obj)
     {
-        if (!isset($this->identityMap[$obj])) {
-            throw new Moxca_Taxonomy_TaxonomyMapperException('Object has no ID, cannot update.');
-        }
 
-        $query = $this->db->prepare("UPDATE moxca_blog_categories SET label = :label WHERE id = :id;");
+        $newCategoryTermId = $obj->getCategory();
+        $postId = $obj->getId();
+        $formerCategoryTermId = $this->postHasCategory($postId);
 
-        $query->bindValue(':label', $obj->getLabel(), PDO::PARAM_STR);
+        if (!$formerCategoryTermId) {
+            if ($newCategoryTermId > 0) {
+                $this->insertRelationship($postId, $newCategoryTermId);
+            }
+        } else {
+            if ($newCategoryTermId != $formerCategoryTermId) {
+                $formerTermTaxonomy = $this->existsCategory($formerCategoryTermId);
 
-        try {
-            $query->execute();
-        } catch (Exception $e) {
-            throw new Moxca_Taxonomy_TaxonomyException("sql failed");
+                $newTermTaxonomy = $this->createCategoryIfNeeded($newCategoryTermId);
+
+                $query = $this->db->prepare("UPDATE moxca_terms_relationships SET term_taxonomy = :newCategory"
+                        . " WHERE object = :postId AND term_taxonomy = :formerCategory;");
+
+                $query->bindValue(':postId', $postId, PDO::PARAM_STR);
+                $query->bindValue(':newCategory', $newTermTaxonomy, PDO::PARAM_STR);
+                $query->bindValue(':formerCategory', $formerTermTaxonomy, PDO::PARAM_STR);
+
+
+                $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = count + 1
+                    WHERE id = :termTaxonomy;");
+                $query->bindValue(':termTaxonomy', $newTermTaxonomy, PDO::PARAM_STR);
+                $query->execute();
+
+                $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = count - 1
+                    WHERE id = :termTaxonomy;");
+                $query->bindValue(':termTaxonomy', $formerTermTaxonomy, PDO::PARAM_STR);
+                $query->execute();
+
+                $query->execute();
+            }
         }
 
     }
@@ -106,13 +141,44 @@ class Moxca_Taxonomy_TaxonomyMapper
 
     }
 
-
-
     private function setAttributeValue(Moxca_Taxonomy_Taxonomy $a, $fieldValue, $attributeName)
     {
         $attribute = new ReflectionProperty($a, $attributeName);
         $attribute->setAccessible(TRUE);
         $attribute->setValue($a, $fieldValue);
+    }
+
+    public function postHasCategory($postId)
+    {
+        $query = $this->db->prepare('SELECT tx.term_id
+                FROM moxca_terms_relationships tr
+                LEFT JOIN moxca_terms_taxonomy tx ON tr.term_taxonomy = tx.id
+                WHERE tr.object = :postId
+                AND tx.taxonomy =  \'category\'');
+
+        $query->bindValue(':postId', $postId, PDO::PARAM_INT);
+        $query->execute();
+
+        $result = $query->fetch();
+
+        if (!empty($result)) {
+            $row = current($result);
+            return $row['term_id'];
+        } else {
+            return false;
+        }
+    }
+
+
+    private function createCategoryIfNeeded($termId)
+    {
+        $existsCategoryWithTerm = $this->existsCategory($termId);
+        if (!$existsCategoryWithTerm) {
+            $existsCategoryWithTerm = $this->insertCategory($termId);
+        }
+
+        return $existsCategoryWithTerm;
+
     }
 
 

@@ -68,7 +68,7 @@ class Moxca_Blog_PostMapper
         }
 
         $query = $this->db->prepare("UPDATE moxca_blog_posts SET uri = :uri, title = :title
-            , summary = :summary, content = :content, category = :category
+            , summary = :summary, content = :content
             , publication_date = :publication_date, creation_date = :creation_date
             , last_edition_date = :last_edition_date, author = :author
             , author_name = :author_name, status = :status WHERE id = :id;");
@@ -77,7 +77,6 @@ class Moxca_Blog_PostMapper
         $query->bindValue(':title', $obj->getTitle(true), PDO::PARAM_STR);
         $query->bindValue(':summary', $obj->getSummary(), PDO::PARAM_STR);
         $query->bindValue(':content', $obj->getContent(), PDO::PARAM_STR);
-        $query->bindValue(':category', $obj->getCategory(), PDO::PARAM_STR);
         $query->bindValue(':publication_date', $obj->getPublicationDate(), PDO::PARAM_STR);
         $query->bindValue(':creation_date', $obj->getCreationDate(), PDO::PARAM_STR);
         $query->bindValue(':last_edition_date', $obj->getLastEditionDate(), PDO::PARAM_STR);
@@ -86,11 +85,15 @@ class Moxca_Blog_PostMapper
         $query->bindValue(':status', $obj->getStatus(), PDO::PARAM_STR);
         $query->bindValue(':id', $this->identityMap[$obj], PDO::PARAM_STR);
 
+            $query->execute();
         try {
             $query->execute();
         } catch (Exception $e) {
             throw new Moxca_Blog_PostException("sql failed");
         }
+
+        $taxonomyMapper = new Moxca_Taxonomy_TaxonomyMapper($this->db);
+        $taxonomyMapper->updatePostCategoryRelationShip($obj);
     }
 
     public function findById($id)
@@ -184,6 +187,28 @@ class Moxca_Blog_PostMapper
 
     }
 
+    public function findTaxonomyByCategory($id)
+    {
+
+        $query = $this->db->prepare('SELECT id FROM moxca_terms_taxonomy tx
+                WHERE tx.term_id = :id
+                AND tx.taxonomy =  \'category\'');
+        $query->bindValue(':id', $id, PDO::PARAM_STR);
+        $query->execute();
+
+        $result = $query->fetch();
+
+        if (empty($result)) {
+            $taxonomyId = null;
+        } else {
+            $taxonomyId = $result['id'];
+        }
+
+        return $taxonomyId;
+
+
+    }
+
     public function delete(Moxca_Blog_Post $obj)
     {
         if (!isset($this->identityMap[$obj])) {
@@ -192,6 +217,30 @@ class Moxca_Blog_PostMapper
         $query = $this->db->prepare('DELETE FROM moxca_blog_posts WHERE id = :id;');
         $query->bindValue(':id', $this->identityMap[$obj], PDO::PARAM_STR);
         $query->execute();
+
+        $postId = $this->identityMap[$obj];
+
+        $categoryTaxonomyId = $this->findTaxonomyByCategory($obj->getCategory());
+
+        $query = $this->db->prepare('DELETE FROM moxca_terms_relationships
+                USING moxca_terms_relationships, moxca_terms_taxonomy
+                WHERE moxca_terms_relationships.object = :id
+                AND moxca_terms_taxonomy.id = moxca_terms_relationships.term_taxonomy
+                AND moxca_terms_taxonomy.taxonomy =  \'category\'');
+        $query->bindValue(':id', $postId, PDO::PARAM_STR);
+        $query->execute();
+        $categoriesDeleted = $query->rowCount();
+
+        if ($categoriesDeleted > 0) {
+            $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = count - :deleted
+                WHERE id = :termTaxonomy;");
+            $query->bindValue(':termTaxonomy', $categoryTaxonomyId, PDO::PARAM_STR);
+            $query->bindValue(':deleted', $categoriesDeleted, PDO::PARAM_INT);
+            $query->execute();
+        }
+
+
+
 
         unset($this->identityMap[$obj]);
     }
