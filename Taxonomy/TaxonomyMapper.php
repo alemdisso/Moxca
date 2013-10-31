@@ -85,7 +85,6 @@ class Moxca_Taxonomy_TaxonomyMapper
         } else {
             if ($newCategoryTermId != $formerCategoryTermId) {
                 $formerTermTaxonomy = $this->existsCategory($formerCategoryTermId);
-
                 $newTermTaxonomy = $this->createCategoryIfNeeded($newCategoryTermId);
 
                 $query = $this->db->prepare("UPDATE moxca_terms_relationships SET term_taxonomy = :newCategory"
@@ -104,9 +103,14 @@ class Moxca_Taxonomy_TaxonomyMapper
                 $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = count - 1
                     WHERE id = :termTaxonomy;");
                 $query->bindValue(':termTaxonomy', $formerTermTaxonomy, PDO::PARAM_STR);
-                $query->execute();
 
-                $query->execute();
+                try {
+                    $query->execute();
+                } catch (Exception $e) {
+                    $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = 0
+                        WHERE id = :termTaxonomy;");
+                    $query->bindValue(':termTaxonomy', $formerTermTaxonomy, PDO::PARAM_STR);
+                }
             }
         }
 

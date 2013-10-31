@@ -85,7 +85,6 @@ class Moxca_Blog_PostMapper
         $query->bindValue(':status', $obj->getStatus(), PDO::PARAM_STR);
         $query->bindValue(':id', $this->identityMap[$obj], PDO::PARAM_STR);
 
-            $query->execute();
         try {
             $query->execute();
         } catch (Exception $e) {
@@ -236,7 +235,13 @@ class Moxca_Blog_PostMapper
                 WHERE id = :termTaxonomy;");
             $query->bindValue(':termTaxonomy', $categoryTaxonomyId, PDO::PARAM_STR);
             $query->bindValue(':deleted', $categoriesDeleted, PDO::PARAM_INT);
-            $query->execute();
+            try {
+                $query->execute();
+            } catch (Exception $e) {
+                $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = 0
+                    WHERE id = :termTaxonomy;");
+                $query->bindValue(':termTaxonomy', $categoryTaxonomyId, PDO::PARAM_STR);
+            }
         }
 
 
