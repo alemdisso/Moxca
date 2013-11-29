@@ -64,8 +64,8 @@ class Moxca_Taxonomy_TaxonomyMapper
         $result = $query->fetch();
 
         if (!empty($result)) {
-            $row = current($result);
-            return $row['id'];
+            //$row = current($result);
+            return $result['id'];
         } else {
             return false;
         }
@@ -93,6 +93,7 @@ class Moxca_Taxonomy_TaxonomyMapper
                 $query->bindValue(':postId', $postId, PDO::PARAM_STR);
                 $query->bindValue(':newCategory', $newTermTaxonomy, PDO::PARAM_STR);
                 $query->bindValue(':formerCategory', $formerTermTaxonomy, PDO::PARAM_STR);
+                $query->execute();
 
 
                 $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = count + 1
@@ -166,8 +167,8 @@ class Moxca_Taxonomy_TaxonomyMapper
         $result = $query->fetch();
 
         if (!empty($result)) {
-            $row = current($result);
-            return $row['term_id'];
+            //$row = current($result);
+            return $result['term_id'];
         } else {
             return false;
         }
