@@ -17,7 +17,7 @@ class Moxca_Taxonomy_TaxonomyMapper
 
         $query = $this->db->prepare('DELETE FROM moxca_terms_relationships
                 USING moxca_terms_relationships, moxca_terms_taxonomy
-                WHERE moxca_terms_relationships.object = :id
+                WHERE moxca_terms_relationships.object = :object
                 AND moxca_terms_taxonomy.id = moxca_terms_relationships.term_taxonomy
                 AND moxca_terms_taxonomy.term_id = :termId
                 AND moxca_terms_taxonomy.taxonomy =  :taxonomy');
@@ -203,5 +203,42 @@ class Moxca_Taxonomy_TaxonomyMapper
 
     }
 
+    public function decreaseTermTaxonomyCount($id, $times = 1)
+    {
+        if ($times > 0) {
+            $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = count - :deleted
+                WHERE id = :termTaxonomy;");
+            $query->bindValue(':termTaxonomy', $id, PDO::PARAM_STR);
+            $query->bindValue(':deleted', $times, PDO::PARAM_INT);
+            try {
+                $query->execute();
+            } catch (Exception $e) {
+                $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = 0
+                    WHERE id = :termTaxonomy;");
+                $query->bindValue(':termTaxonomy', $id, PDO::PARAM_STR);
+                $query->execute();
+            }
+        }
+
+    }
+
+    public function purgeDeletedObject($objectId, $taxonomy)
+    {
+        $query = $this->db->prepare('DELETE FROM moxca_terms_relationships
+                USING moxca_terms_relationships, moxca_terms_taxonomy
+                WHERE moxca_terms_relationships.object = :id
+                AND moxca_terms_taxonomy.id = moxca_terms_relationships.term_taxonomy
+                AND moxca_terms_taxonomy.taxonomy =  :taxonomy');
+        $query->bindValue(':id', $objectId, PDO::PARAM_INT);
+        $query->bindValue(':taxonomy', $taxonomy, PDO::PARAM_STR);
+        $query->execute();
+        $rowsDeleted = $query->rowCount();
+
+        if ($rowsDeleted > 0) {
+            $this->decreaseTermTaxonomyCount($objectId, $rowsDeleted);
+        }
+
+
+    }
 
 }
