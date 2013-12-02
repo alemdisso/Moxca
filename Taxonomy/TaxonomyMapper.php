@@ -12,6 +12,23 @@ class Moxca_Taxonomy_TaxonomyMapper
         $this->identityMap = new SplObjectStorage;
     }
 
+    public function deleteRelationship($objectId, $termId, $taxonomy)
+    {
+
+        $query = $this->db->prepare('DELETE FROM moxca_terms_relationships
+                USING moxca_terms_relationships, moxca_terms_taxonomy
+                WHERE moxca_terms_relationships.object = :id
+                AND moxca_terms_taxonomy.id = moxca_terms_relationships.term_taxonomy
+                AND moxca_terms_taxonomy.term_id = :termId
+                AND moxca_terms_taxonomy.taxonomy =  :taxonomy');
+
+        $query->bindValue(':object', $objectId, PDO::PARAM_INT);
+        $query->bindValue(':termId', $termId, PDO::PARAM_INT);
+        $query->bindValue(':taxonomy', $taxonomy, PDO::PARAM_STR);
+        $query->execute();
+
+    }
+
     public function insertCategory($termId)
     {
 
@@ -27,13 +44,13 @@ class Moxca_Taxonomy_TaxonomyMapper
 
     }
 
-    public function insertRelationship($postId, $termTaxonomyId)
+    public function insertRelationship($objectId, $termTaxonomyId)
     {
 
         $query = $this->db->prepare("INSERT INTO moxca_terms_relationships (object, term_taxonomy)
-            VALUES (:postId, :termTaxonomy)");
+            VALUES (:object, :termTaxonomy)");
 
-        $query->bindValue(':postId', $postId, PDO::PARAM_STR);
+        $query->bindValue(':object', $objectId, PDO::PARAM_STR);
         $query->bindValue(':termTaxonomy', $termTaxonomyId, PDO::PARAM_STR);
         $query->execute();
 
