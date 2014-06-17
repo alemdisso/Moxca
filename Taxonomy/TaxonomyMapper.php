@@ -88,6 +88,24 @@ class Moxca_Taxonomy_TaxonomyMapper
         }
     }
 
+    public function findTermAndInsertIfNew($term)
+    {
+        $query = $this->db->prepare('SELECT t.id
+                FROM moxca_terms t
+                WHERE t.term = :term');
+        $query->bindValue(':term', $term, PDO::PARAM_STR);
+        $query->execute();
+
+        $result = $query->fetch();
+        if (empty($result)) {
+            $termId = $this->insertTerm($term);
+        } else {
+            $termId = $result['id'];
+        }
+        return $termId;
+
+    }
+
     public function updatePostCategoryRelationShip(Moxca_Blog_Post $obj)
     {
 
@@ -163,6 +181,19 @@ class Moxca_Taxonomy_TaxonomyMapper
 
     }
 
+    public function getTermByUri($uri)
+    {
+        $query = $this->db->prepare('SELECT t.term
+                FROM moxca_terms t
+                WHERE t.uri =  :uri ORDER BY t.term');
+        $query->bindValue(':uri', $uri, PDO::PARAM_INT);
+        $query->execute();
+        $resultPDO = $query->fetchAll();
+        $data = current($resultPDO);
+        return $data;
+
+    }
+
     private function setAttributeValue(Moxca_Taxonomy_Taxonomy $a, $fieldValue, $attributeName)
     {
         $attribute = new ReflectionProperty($a, $attributeName);
@@ -221,6 +252,25 @@ class Moxca_Taxonomy_TaxonomyMapper
         }
 
     }
+
+    public function insertTerm($term)
+    {
+
+        $converter = new Moxca_Util_StringToAscii;
+        $uri = $converter->toAscii($term);
+        $query = $this->db->prepare("INSERT INTO moxca_terms (term, uri)
+            VALUES (:term, :uri)");
+
+        $query->bindValue(':term', $term, PDO::PARAM_STR);
+        $query->bindValue(':uri', $uri, PDO::PARAM_STR);
+
+        $query->execute();
+
+        return (int)$this->db->lastInsertId();
+
+
+    }
+
 
     public function purgeDeletedObject($objectId, $taxonomy)
     {

@@ -5,7 +5,7 @@ class Moxca_View_Helper_CheckTermFromGet extends Zend_View_Helper_Abstract
     public function checkTermFromGet($data, $fieldname="term")
     {
         $filters = array(
-            $fieldname => new Zend_Filter_Alnum(array('allowwhitespace' => true)),
+//            $fieldname => new Zend_Filter_Alnum(array('allowwhitespace' => true)),
         );
         $validators = array(
             $fieldname => array(new Moxca_Util_ValidTitle()),
