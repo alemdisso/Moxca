@@ -168,6 +168,34 @@ class Moxca_Taxonomy_TaxonomyMapper
 
     }
 
+
+    public function getPublishedPostsByCategory($category)
+    {
+
+        $query = $this->db->prepare('SELECT p.id
+                FROM moxca_blog_posts p
+                LEFT JOIN moxca_terms_relationships tr ON p.id = tr.object
+                LEFT JOIN moxca_terms_taxonomy tx ON tr.term_taxonomy = tx.id
+                LEFT JOIN moxca_terms tt ON tx.term_id = tt.id
+                WHERE tt.uri = :category
+                AND p.status = :published
+                AND tx.taxonomy =  \'category\' ORDER BY publication_date DESC;');
+
+        $query->bindValue(':category', $category, PDO::PARAM_STR);
+        $query->bindValue(':published', Moxca_Blog_PostStatusConstants::STATUS_PUBLISHED, PDO::PARAM_INT);
+        $query->execute();
+        $resultPDO = $query->fetchAll();
+        $data = array();
+        foreach ($resultPDO as $row) {
+            $data[] = $row['id'];
+        }
+
+        return $data;
+
+    }
+
+
+
     public function getTermAndUri($id)
     {
         $query = $this->db->prepare('SELECT t.term, t.uri
