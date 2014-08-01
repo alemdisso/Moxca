@@ -31,11 +31,9 @@ class Moxca_Form_QuestionEdit extends Moxca_Form_QuestionCreate
 
             $obj->setTitle($data['title']);
             $obj->setStatus($data['status']);
-            $obj->setContent($data['content']);
-            $obj->setCategory($data['category']);
-
-            $user = Zend_Registry::get('user');
-            $obj->setAuthor($user->getId());
+            $obj->setQuestion($data['question']);
+            $obj->setAnswer($data['answer']);
+            $obj->setRank($data['rank']);
 
             $questionMapper->update($obj);
 

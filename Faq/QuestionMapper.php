@@ -13,7 +13,7 @@ class Moxca_Faq_QuestionMapper
 
     public function getAllIds()
     {
-        $query = $this->db->prepare('SELECT id FROM moxca_faq_questions WHERE 1=1;');
+        $query = $this->db->prepare('SELECT id FROM moxca_faq_questions WHERE 1=1 ORDER BY rank;');
         $query->execute();
         $resultPDO = $query->fetchAll();
 
