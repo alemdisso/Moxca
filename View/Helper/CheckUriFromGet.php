@@ -1,6 +1,6 @@
 <?php
 
-class Author_View_Helper_CheckUriFromGet extends Zend_View_Helper_Abstract
+class Moxca_View_Helper_CheckUriFromGet extends Zend_View_Helper_Abstract
 {
     public function CheckUriFromGet($data)
     {

@@ -145,7 +145,7 @@ class Moxca_Faq_QuestionMapper
     public function getAllActiveQuestionsIds()
     {
         $query = $this->db->prepare('SELECT p.id FROM moxca_faq_questions p
-                                     WHERE status = :status ORDER BY rank DESC;');
+                                     WHERE status = :status ORDER BY rank ASC;');
         $query->bindValue(':status', Moxca_Blog_QuestionStatusConstants::STATUS_ACTIVE, PDO::PARAM_INT);
         $query->execute();
         $resultPDO = $query->fetchAll();
@@ -154,6 +154,24 @@ class Moxca_Faq_QuestionMapper
         foreach ($resultPDO as $row) {
             if (!is_null($row['id'])) {
                 $result[] = $row['id'];
+            }
+        }
+        return $result;
+
+    }
+
+    public function getAllActiveQuestionsIdsAndTitles()
+    {
+        $query = $this->db->prepare('SELECT p.id, p.title FROM moxca_faq_questions p
+                                     WHERE status = :status ORDER BY rank ASC;');
+        $query->bindValue(':status', Moxca_Faq_QuestionStatusConstants::STATUS_ACTIVE, PDO::PARAM_INT);
+        $query->execute();
+        $resultPDO = $query->fetchAll();
+
+        $result = array();
+        foreach ($resultPDO as $row) {
+            if (!is_null($row['id'])) {
+                $result[] = array('id' => $row['id'], 'title' => $row['title'],);
             }
         }
         return $result;
