@@ -45,8 +45,16 @@ class Moxca_Form_PostCreate extends Zend_Form
                 ->setSeparator('');
         $this->addElement($element);
 
+
         $mapper = new Moxca_Taxonomy_TaxonomyMapper();
-        $labelsArray = $mapper->getAllCategoriesAlphabeticallyOrdered();
+        $rawLabelsArray = $mapper->getAllCategoriesAlphabeticallyOrdered();
+
+        $view = new Zend_View();
+        $labelsArray = array("0" => $view->translate("#(choose)"));
+
+        foreach($rawLabelsArray as $k => $label) {
+            $labelsArray[$k] = $label;
+        }
 
         $element = new Zend_Form_Element_Select('category');
         $element->setLabel('#Category')
