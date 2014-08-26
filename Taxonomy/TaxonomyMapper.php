@@ -231,9 +231,9 @@ class Moxca_Taxonomy_TaxonomyMapper
 
     public function postHasCategory($postId)
     {
-        $query = $this->db->prepare('SELECT tx.term_id
+        $query = $this->db->prepare('SELECT tr.id
                 FROM moxca_terms_relationships tr
-                LEFT JOIN moxca_terms_taxonomy tx ON tr.term_taxonomy = tx.id
+                LEFT JOIN moxca_terms_taxonomy tx ON tr.term_taxonomy = tx.term_id
                 WHERE tr.object = :postId
                 AND tx.taxonomy =  \'category\'');
 
@@ -244,7 +244,7 @@ class Moxca_Taxonomy_TaxonomyMapper
 
         if (!empty($result)) {
             //$row = current($result);
-            return $result['term_id'];
+            return $result['id'];
         } else {
             return false;
         }
