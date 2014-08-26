@@ -108,10 +108,11 @@ class Moxca_Taxonomy_TaxonomyMapper
 
     public function updatePostCategoryRelationShip(Moxca_Blog_Post $obj)
     {
-
         $newCategoryTermId = $obj->getCategory();
         $postId = $obj->getId();
         $formerCategoryTermId = $this->postHasCategory($postId);
+
+        //echo "former $formerCategoryTermId => new $newCategoryTermId<br>";die();
 
         if (!$formerCategoryTermId) {
             if ($newCategoryTermId > 0) {
@@ -231,9 +232,9 @@ class Moxca_Taxonomy_TaxonomyMapper
 
     public function postHasCategory($postId)
     {
-        $query = $this->db->prepare('SELECT tr.id
+        $query = $this->db->prepare('SELECT tx.term_id
                 FROM moxca_terms_relationships tr
-                LEFT JOIN moxca_terms_taxonomy tx ON tr.term_taxonomy = tx.term_id
+                LEFT JOIN moxca_terms_taxonomy tx ON tr.term_taxonomy = tx.id
                 WHERE tr.object = :postId
                 AND tx.taxonomy =  \'category\'');
 
@@ -244,7 +245,7 @@ class Moxca_Taxonomy_TaxonomyMapper
 
         if (!empty($result)) {
             //$row = current($result);
-            return $result['id'];
+            return $result['term_id'];
         } else {
             return false;
         }
