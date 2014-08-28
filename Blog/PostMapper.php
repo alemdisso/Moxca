@@ -52,7 +52,7 @@ class Moxca_Blog_PostMapper
         $obj->setId((int)$this->db->lastInsertId());
         $this->identityMap[$obj] = $obj->getId();
 
-        $taxonomyMapper = new Moxca_Taxonomy_TaxonomyMapper($this->db);
+        $taxonomyMapper = new Moxca_Blog_TaxonomyMapper($this->db);
         $taxonomyMapper->insertPostCategoryRelationShip($obj);
 
 
@@ -91,7 +91,7 @@ class Moxca_Blog_PostMapper
             throw new Moxca_Blog_PostException("sql failed");
         }
 
-        $taxonomyMapper = new Moxca_Taxonomy_TaxonomyMapper($this->db);
+        $taxonomyMapper = new Moxca_Blog_TaxonomyMapper($this->db);
         $taxonomyMapper->updatePostCategoryRelationShip($obj);
     }
 

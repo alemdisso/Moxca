@@ -46,7 +46,7 @@ class Moxca_Form_PostCreate extends Zend_Form
         $this->addElement($element);
 
 
-        $mapper = new Moxca_Taxonomy_TaxonomyMapper();
+        $mapper = new Moxca_Blog_TaxonomyMapper();
         $rawLabelsArray = $mapper->getAllCategoriesAlphabeticallyOrdered();
 
         $view = new Zend_View();
