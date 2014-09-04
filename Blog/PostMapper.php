@@ -251,12 +251,18 @@ class Moxca_Blog_PostMapper
     }
 
 
-    public function getLastPublishedPosts($limit=10)
+    public function getLastPublishedPosts($limit=10, $offset=0)
     {
+
+        if ($offset) {
+            //$limit = "$offset, $limit";
+        }
+
         $query = $this->db->prepare('SELECT p.id FROM moxca_blog_posts p
-                                     WHERE p.status = :published ORDER BY publication_date DESC LIMIT :limit;');
+                                     WHERE p.status = :published ORDER BY publication_date DESC LIMIT :offset,:limit;');
         $query->bindValue(':published', Moxca_Blog_PostStatusConstants::STATUS_PUBLISHED, PDO::PARAM_INT);
         $query->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $query->bindValue(':offset', $offset, PDO::PARAM_INT);
         $query->execute();
         $resultPDO = $query->fetchAll();
 
