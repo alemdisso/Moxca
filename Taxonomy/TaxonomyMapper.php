@@ -51,6 +51,8 @@ class Moxca_Taxonomy_TaxonomyMapper
 
     public function findTermAndInsertIfNew($term)
     {
+
+        $term = trim($term);
         $query = $this->db->prepare('SELECT t.id
                 FROM moxca_terms t
                 WHERE t.term = :term');
@@ -58,7 +60,7 @@ class Moxca_Taxonomy_TaxonomyMapper
         $query->execute();
 
         $result = $query->fetch();
-        if (empty($result)) {
+       if (empty($result)) {
             $termId = $this->insertTerm($term);
         } else {
             $termId = $result['id'];
@@ -88,7 +90,7 @@ class Moxca_Taxonomy_TaxonomyMapper
         $query = $this->db->prepare('SELECT t.term
                 FROM moxca_terms t
                 WHERE t.uri =  :uri ORDER BY t.term');
-        $query->bindValue(':uri', $uri, PDO::PARAM_INT);
+        $query->bindValue(':uri', $uri, PDO::PARAM_STR);
         $query->execute();
         $resultPDO = $query->fetchAll();
         $data = current($resultPDO);
@@ -103,38 +105,6 @@ class Moxca_Taxonomy_TaxonomyMapper
         $attribute->setValue($a, $fieldValue);
     }
 
-//    public function postHasCategory($postId)
-//    {
-//        $query = $this->db->prepare('SELECT tx.term_id
-//                FROM moxca_terms_relationships tr
-//                LEFT JOIN moxca_terms_taxonomy tx ON tr.term_taxonomy = tx.id
-//                WHERE tr.object = :postId
-//                AND tx.taxonomy =  \'category\'');
-//
-//        $query->bindValue(':postId', $postId, PDO::PARAM_INT);
-//        $query->execute();
-//
-//        $result = $query->fetch();
-//
-//        if (!empty($result)) {
-//            //$row = current($result);
-//            return $result['term_id'];
-//        } else {
-//            return false;
-//        }
-//    }
-//
-//
-//    private function createCategoryIfNeeded($termId)
-//    {
-//        $existsCategoryWithTerm = $this->existsCategory($termId);
-//        if (!$existsCategoryWithTerm) {
-//            $existsCategoryWithTerm = $this->insertCategory($termId);
-//        }
-//
-//        return $existsCategoryWithTerm;
-//
-//    }
 
     public function decreaseTermTaxonomyCount($id, $times = 1)
     {
@@ -159,7 +129,7 @@ class Moxca_Taxonomy_TaxonomyMapper
     {
 
         $converter = new Moxca_Util_StringToAscii;
-        $uri = $converter->toAscii($term);
+        $uri = $converter->toAscii(trim($term));
         $query = $this->db->prepare("INSERT INTO moxca_terms (term, uri)
             VALUES (:term, :uri)");
 
