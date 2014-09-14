@@ -26,21 +26,6 @@ class Moxca_Blog_TaxonomyMapper extends Moxca_Taxonomy_TaxonomyMapper
 
     }
 
-//    public function insert(Moxca_Blog_Taxonomy $obj)
-//    {
-//
-//        $query = $this->db->prepare("INSERT INTO moxca_blog_categories (label)
-//            VALUES (:label)");
-//
-//        $query->bindValue(':label', $obj->getLabel(), PDO::PARAM_STR);
-//
-//        $query->execute();
-//
-//        $obj->setId((int)$this->db->lastInsertId());
-//        $this->identityMap[$obj] = $obj->getId();
-//
-//    }
-
     public function insertCategory($termId)
     {
 
@@ -71,6 +56,18 @@ class Moxca_Blog_TaxonomyMapper extends Moxca_Taxonomy_TaxonomyMapper
 
     }
 
+    private function createCategoryIfNeeded($termId)
+    {
+        $existsCategoryWithTerm = $this->existsCategory($termId);
+        if (!$existsCategoryWithTerm) {
+            $existsCategoryWithTerm = $this->insertCategory($termId);
+        }
+
+        return $existsCategoryWithTerm;
+
+    }
+
+
     public function existsCategory($termId)
     {
         $query = $this->db->prepare("SELECT id FROM moxca_terms_taxonomy WHERE term_id = :termId AND taxonomy = 'category';");
@@ -79,10 +76,9 @@ class Moxca_Blog_TaxonomyMapper extends Moxca_Taxonomy_TaxonomyMapper
         $query->execute();
 
         $result = $query->fetch();
-
         if (!empty($result)) {
-            $row = current($result);
-            return $row['id'];
+            $id = current($result);
+            return $id;
         } else {
             return false;
         }
@@ -245,6 +241,26 @@ class Moxca_Blog_TaxonomyMapper extends Moxca_Taxonomy_TaxonomyMapper
         return (int)$this->db->lastInsertId();
 
 
+    }
+
+    public function postHasCategory($postId)
+    {
+        $query = $this->db->prepare('SELECT tx.term_id
+                FROM moxca_terms_relationships tr
+                LEFT JOIN moxca_terms_taxonomy tx ON tr.term_taxonomy = tx.id
+                WHERE tr.object = :postId
+                AND tx.taxonomy =  \'category\'');
+
+        $query->bindValue(':postId', $postId, PDO::PARAM_INT);
+        $query->execute();
+
+        $result = $query->fetch();
+
+        if (!empty($result)) {
+            return $result['term_id'];
+        } else {
+            return false;
+        }
     }
 
     public function updatePostCategoryRelationShip(Moxca_Blog_Post $obj)
