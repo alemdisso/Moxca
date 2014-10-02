@@ -14,6 +14,7 @@ class Moxca_Blog_Post {
     protected $author;
     protected $authorName;
     protected $status;
+    protected $keywords;
 
     function __construct($id=0) {
         $this->id = (int)$id;
@@ -28,6 +29,7 @@ class Moxca_Blog_Post {
         $this->author = null;
         $this->authorName = "";
         $this->status = null;
+        $this->keywords = array();
     }
 
     public function getId() {
@@ -244,5 +246,24 @@ class Moxca_Blog_Post {
     {
         return $this->uri;
     } //getUri
+
+    public function getKeywords()
+    {
+        return $this->keywords;
+    } //getKeywords
+
+    public function addKeyword($termId)
+    {
+        
+        if (isset($this->keywords)) {
+            $values = array_flip($this->keywords);
+            if (!isset($values[$termId])) {
+                $this->keywords[] = $termId;
+            }
+        } else {
+            $this->keywords[] = $termId;
+        }
+
+    } //getKeywords
 
 }

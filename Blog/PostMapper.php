@@ -53,7 +53,7 @@ class Moxca_Blog_PostMapper
         $this->identityMap[$obj] = $obj->getId();
 
         $taxonomyMapper = new Moxca_Blog_TaxonomyMapper($this->db);
-        $taxonomyMapper->insertPostCategoryRelationShip($obj);
+        $taxonomyMapper->insertPostCategoryRelationship($obj);
 
 
 
@@ -92,7 +92,11 @@ class Moxca_Blog_PostMapper
         }
 
         $taxonomyMapper = new Moxca_Blog_TaxonomyMapper($this->db);
-        $taxonomyMapper->updatePostCategoryRelationShip($obj);
+        $taxonomyMapper->updatePostCategoryRelationship($obj);
+        if ($obj->getKeywords()) {
+            $taxonomyMapper->updatePostKeywordsRelationships($obj);
+        }
+
     }
 
     public function findById($id)
@@ -132,10 +136,10 @@ class Moxca_Blog_PostMapper
         $this->setAttributeValue($obj, $result['author_name'], 'authorName');
         $this->setAttributeValue($obj, $result['status'], 'status');
 
+        $taxonomyMapper = new Moxca_Blog_TaxonomyMapper($this->db);
+        $this->setAttributeValue($obj, $taxonomyMapper->postHasKeywords($id), 'keywords');
 
         $this->identityMap[$obj] = $id;
-
-
 
         return $obj;
 
@@ -219,30 +223,37 @@ class Moxca_Blog_PostMapper
 
         $postId = $this->identityMap[$obj];
 
-        $categoryTaxonomyId = $this->findTaxonomyByCategory($obj->getCategory());
 
-        $query = $this->db->prepare('DELETE FROM moxca_terms_relationships
-                USING moxca_terms_relationships, moxca_terms_taxonomy
-                WHERE moxca_terms_relationships.object = :id
-                AND moxca_terms_taxonomy.id = moxca_terms_relationships.term_taxonomy
-                AND moxca_terms_taxonomy.taxonomy =  \'category\'');
-        $query->bindValue(':id', $postId, PDO::PARAM_STR);
-        $query->execute();
-        $categoriesDeleted = $query->rowCount();
+        $taxonomyMapper = new Author_Collection_TaxonomyMapper($this->db);
+        $categoryTaxonomyId = $taxonomyMapper->findTaxonomyByCategory($obj->getCategory());
+        $taxonomyMapper->purgeDeletedObject($postId, 'category');
+        $taxonomyMapper->purgeDeletedObject($postId, 'post_keyword');
 
-        if ($categoriesDeleted > 0) {
-            $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = count - :deleted
-                WHERE id = :termTaxonomy;");
-            $query->bindValue(':termTaxonomy', $categoryTaxonomyId, PDO::PARAM_STR);
-            $query->bindValue(':deleted', $categoriesDeleted, PDO::PARAM_INT);
-            try {
-                $query->execute();
-            } catch (Exception $e) {
-                $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = 0
-                    WHERE id = :termTaxonomy;");
-                $query->bindValue(':termTaxonomy', $categoryTaxonomyId, PDO::PARAM_STR);
-            }
-        }
+//
+//        $categoryTaxonomyId = $this->findTaxonomyByCategory($obj->getCategory());
+//
+//        $query = $this->db->prepare('DELETE FROM moxca_terms_relationships
+//                USING moxca_terms_relationships, moxca_terms_taxonomy
+//                WHERE moxca_terms_relationships.object = :id
+//                AND moxca_terms_taxonomy.id = moxca_terms_relationships.term_taxonomy
+//                AND moxca_terms_taxonomy.taxonomy =  \'category\'');
+//        $query->bindValue(':id', $postId, PDO::PARAM_STR);
+//        $query->execute();
+//        $categoriesDeleted = $query->rowCount();
+//
+//        if ($categoriesDeleted > 0) {
+//            $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = count - :deleted
+//                WHERE id = :termTaxonomy;");
+//            $query->bindValue(':termTaxonomy', $categoryTaxonomyId, PDO::PARAM_STR);
+//            $query->bindValue(':deleted', $categoriesDeleted, PDO::PARAM_INT);
+//            try {
+//                $query->execute();
+//            } catch (Exception $e) {
+//                $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = 0
+//                    WHERE id = :termTaxonomy;");
+//                $query->bindValue(':termTaxonomy', $categoryTaxonomyId, PDO::PARAM_STR);
+//            }
+//        }
 
 
 

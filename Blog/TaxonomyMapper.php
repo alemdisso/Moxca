@@ -38,7 +38,7 @@ class Moxca_Blog_TaxonomyMapper extends Moxca_Taxonomy_TaxonomyMapper
 
     }
 
-    public function insertPostCategoryRelationShip(Moxca_Blog_Post $obj)
+    public function insertPostCategoryRelationship(Moxca_Blog_Post $obj)
     {
 
         $termTaxonomy = $this->existsCategory($obj->getCategory());
@@ -56,6 +56,23 @@ class Moxca_Blog_TaxonomyMapper extends Moxca_Taxonomy_TaxonomyMapper
 
     }
 
+    public function insertPostKeyword($termId)
+    {
+
+        $query = $this->db->prepare("INSERT INTO moxca_terms_taxonomy (term_id, taxonomy, count)
+            VALUES (:termId, 'post_keyword', 0)");
+
+        $query->bindValue(':termId', $termId, PDO::PARAM_INT);
+
+        $query->execute();
+
+        return (int)$this->db->lastInsertId();
+
+
+    }
+
+
+
     private function createCategoryIfNeeded($termId)
     {
         $existsCategoryWithTerm = $this->existsCategory($termId);
@@ -64,6 +81,17 @@ class Moxca_Blog_TaxonomyMapper extends Moxca_Taxonomy_TaxonomyMapper
         }
 
         return $existsCategoryWithTerm;
+
+    }
+
+    private function createPostKeywordIfNeeded($termId)
+    {
+        $existsKeywordWithTerm = $this->existsPostKeyword($termId);
+        if (!$existsKeywordWithTerm) {
+            $existsKeywordWithTerm = $this->insertPostKeyword($termId);
+        }
+
+        return $existsKeywordWithTerm;
 
     }
 
@@ -79,6 +107,22 @@ class Moxca_Blog_TaxonomyMapper extends Moxca_Taxonomy_TaxonomyMapper
         if (!empty($result)) {
             $id = current($result);
             return $id;
+        } else {
+            return false;
+        }
+    }
+
+    public function existsPostKeyword($termId)
+    {
+        $query = $this->db->prepare("SELECT id FROM moxca_terms_taxonomy WHERE term_id = :termId AND taxonomy = 'post_keyword';");
+
+        $query->bindValue(':termId', $termId, PDO::PARAM_INT);
+        $query->execute();
+
+        $result = $query->fetch();
+
+        if (!empty($result)) {
+            return $result['id'];
         } else {
             return false;
         }
@@ -160,6 +204,15 @@ class Moxca_Blog_TaxonomyMapper extends Moxca_Taxonomy_TaxonomyMapper
 
     }
 
+
+    private function insertListOfKeywords($postId, $keywordsArray)
+    {
+        foreach($keywordsArray as $k => $termId) {
+            $termTaxonomyId = $this->createPostKeywordIfNeeded($termId);
+            $this->insertRelationship($postId, $termTaxonomyId);
+        }
+    }
+
     public function getTermAndUri($id)
     {
         $query = $this->db->prepare('SELECT t.term, t.uri
@@ -182,23 +235,23 @@ class Moxca_Blog_TaxonomyMapper extends Moxca_Taxonomy_TaxonomyMapper
         $attribute->setValue($a, $fieldValue);
     }
 
-    public function findTermAndInsertIfNew($term)
-    {
-        $query = $this->db->prepare('SELECT t.id
-                FROM moxca_terms t
-                WHERE t.term = :term');
-        $query->bindValue(':term', $term, PDO::PARAM_STR);
-        $query->execute();
-
-        $result = $query->fetch();
-        if (empty($result)) {
-            $termId = $this->insertTerm($term);
-        } else {
-            $termId = $result['id'];
-        }
-        return $termId;
-
-    }
+//    public function findTermAndInsertIfNew($term)
+//    {
+//        $query = $this->db->prepare('SELECT t.id
+//                FROM moxca_terms t
+//                WHERE t.term = :term');
+//        $query->bindValue(':term', $term, PDO::PARAM_STR);
+//        $query->execute();
+//
+//        $result = $query->fetch();
+//        if (empty($result)) {
+//            $termId = $this->insertTerm($term);
+//        } else {
+//            $termId = $result['id'];
+//        }
+//        return $termId;
+//
+//    }
 
     public function getPublishedPostsByCategory($category)
     {
@@ -243,6 +296,25 @@ class Moxca_Blog_TaxonomyMapper extends Moxca_Taxonomy_TaxonomyMapper
 
     }
 
+    public function postHasKeywords($postId)
+    {
+        $query = $this->db->prepare('SELECT tx.id, tx.term_id
+                FROM moxca_terms_relationships tr
+                LEFT JOIN moxca_terms_taxonomy tx ON tr.term_taxonomy = tx.id
+                WHERE tr.object = :postId
+                AND tx.taxonomy =  \'post_keyword\'');
+
+        $query->bindValue(':postId', $postId, PDO::PARAM_INT);
+        $query->execute();
+        $resultPDO = $query->fetchAll();
+
+        $data = array();
+        foreach ($resultPDO as $row) {
+            $data[$row['id']] = $row['term_id'];
+        }
+        return $data;
+    }
+
     public function postHasCategory($postId)
     {
         $query = $this->db->prepare('SELECT tx.term_id
@@ -263,13 +335,80 @@ class Moxca_Blog_TaxonomyMapper extends Moxca_Taxonomy_TaxonomyMapper
         }
     }
 
-    public function updatePostCategoryRelationShip(Moxca_Blog_Post $obj)
+    public function updatePostKeywordsRelationships(Moxca_Blog_Post $obj)
+    {
+        $newKeywords = $obj->getKeywords();
+        $postId = $obj->getId();
+        $formerKeywords = $this->postHasKeywords($postId);
+
+        if ((is_array($newKeywords)) && (count($newKeywords))) {
+
+            if (!$formerKeywords) {
+                // tudo novo, é só incluir
+                if (count($newKeywords) > 0) {
+                    $this->insertListOfKeywords($postId, $newKeywords);
+                }
+            } else {
+                //descobre se caiu algum
+                //   e remove
+                $toRemove = array_diff($formerKeywords, $newKeywords);
+                if ((is_array($toRemove)) && (count($toRemove))) {
+                    foreach($toRemove as $k => $termId) {
+                        if ($taxonomyId = $this->createPostKeywordIfNeeded($termId)) {
+                            $this->deleteRelationship($postId, $termId, 'post_keyword');
+                            $this->decreaseTermTaxonomyCount($taxonomyId, 1);
+                        }
+                    }
+                }
+
+                //descobre quais são novos
+                //    e inclui
+                $toInclude = array_diff($newKeywords, $formerKeywords);
+                if ((is_array($toInclude)) && (count($toInclude))) {
+                    $this->insertListOfKeywords($postId, $toInclude);
+                }
+
+                if ($newKeywords != $formerKeywords) {
+                    $formerTermTaxonomy = $this->createPostKeywordIfNeeded($formerKeywords);
+                    $newTermTaxonomy = $this->createPostKeywordIfNeeded($newKeywords);
+
+                    $query = $this->db->prepare("UPDATE moxca_terms_relationships SET term_taxonomy = :newKeyword"
+                            . " WHERE object = :postId AND term_taxonomy = :formerKeyword;");
+
+                    $query->bindValue(':postId', $postId, PDO::PARAM_STR);
+                    $query->bindValue(':newKeyword', $newTermTaxonomy, PDO::PARAM_STR);
+                    $query->bindValue(':formerKeyword', $formerTermTaxonomy, PDO::PARAM_STR);
+                    $query->execute();
+
+                    $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = count + 1
+                        WHERE id = :termTaxonomy;");
+                    $query->bindValue(':termTaxonomy', $newTermTaxonomy, PDO::PARAM_STR);
+                    $query->execute();
+
+                    $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = count - 1
+                        WHERE id = :termTaxonomy;");
+                    $query->bindValue(':termTaxonomy', $formerTermTaxonomy, PDO::PARAM_STR);
+
+                    try {
+                        $query->execute();
+                    } catch (Exception $e) {
+                        $query = $this->db->prepare("UPDATE moxca_terms_taxonomy SET count = 0
+                            WHERE id = :termTaxonomy;");
+                        $query->bindValue(':termTaxonomy', $formerTermTaxonomy, PDO::PARAM_STR);
+                    }
+                }
+            }
+        } else {
+            //remove todos
+        }
+
+    }
+
+    public function updatePostCategoryRelationship(Moxca_Blog_Post $obj)
     {
         $newCategoryTermId = $obj->getCategory();
         $postId = $obj->getId();
         $formerCategoryTermId = $this->postHasCategory($postId);
-
-        //echo "former $formerCategoryTermId => new $newCategoryTermId<br>";die();
 
         if (!$formerCategoryTermId) {
             if ($newCategoryTermId > 0) {
@@ -307,6 +446,47 @@ class Moxca_Blog_TaxonomyMapper extends Moxca_Taxonomy_TaxonomyMapper
                 }
             }
         }
+
+    }
+
+
+    public function getAllPostsKeywordsAlphabeticallyOrdered()
+    {
+        $query = $this->db->prepare('SELECT t.id, t.term, t.uri, tx.count
+                FROM moxca_terms t
+                LEFT JOIN moxca_terms_taxonomy tx ON t.id = tx.term_id
+                WHERE tx.taxonomy =  \'post_keyword\' ORDER BY t.term');
+        $query->execute();
+        $resultPDO = $query->fetchAll();
+        $data = array();
+        foreach ($resultPDO as $row) {
+            $data[$row['id']] = array('term' => $row['term'], 'uri' => $row['uri'], 'count' => $row['count']);
+        }
+        return $data;
+
+    }
+
+
+
+
+    public function getKeywordsRelatedToPost($post)
+    {
+
+        $query = $this->db->prepare("SELECT t.id, t.term, t.uri
+                FROM moxca_terms t
+                LEFT JOIN moxca_terms_taxonomy tx ON t.id = tx.term_id
+                LEFT JOIN moxca_terms_relationships tr ON tx.id = tr.term_taxonomy
+                WHERE tx.taxonomy ='post_keyword'
+                AND tr.object = :object ORDER BY t.term");
+        $query->bindValue(':object', $post, PDO::PARAM_INT);
+        $query->execute();
+        $resultPDO = $query->fetchAll();
+        $data = array();
+        foreach ($resultPDO as $row) {
+            $data[$row['uri']] = $row['term'];
+        }
+        return $data;
+
 
     }
 
