@@ -4,7 +4,6 @@ class Moxca_View_Helper_CanSeePost extends Zend_View_Helper_Abstract
 {
     public function canSeePost(Moxca_Blog_Post $post)
     {
-
         switch ($post->getStatus()) {
             case Moxca_Blog_PostStatusConstants::STATUS_PUBLISHED:
             case Moxca_Blog_PostStatusConstants::STATUS_ARCHIVED:

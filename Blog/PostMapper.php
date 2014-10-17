@@ -82,9 +82,8 @@ class Moxca_Blog_PostMapper
         $query->bindValue(':last_edition_date', $obj->getLastEditionDate(), PDO::PARAM_STR);
         $query->bindValue(':author', $obj->getAuthor(), PDO::PARAM_STR);
         $query->bindValue(':author_name', $obj->getAuthorName(), PDO::PARAM_STR);
-        $query->bindValue(':status', $obj->getStatus(), PDO::PARAM_STR);
+        $query->bindValue(':status', $obj->getStatus(), PDO::PARAM_INT);
         $query->bindValue(':id', $this->identityMap[$obj], PDO::PARAM_STR);
-
         try {
             $query->execute();
         } catch (Exception $e) {
