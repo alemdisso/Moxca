@@ -24,6 +24,7 @@ class Moxca_Form_UserEdit extends Moxca_Form_UserCreate
         $db = Zend_Registry::get('db');
         $userMapper = new Moxca_Auth_UserMapper($db);
 
+
         if ($this->isValid($data) !== true) {
             throw new Moxca_Form_UserEditException(_('#Invalid data!'));
         } else {
@@ -36,6 +37,8 @@ class Moxca_Form_UserEdit extends Moxca_Form_UserCreate
 
             if ($data['password'] != "") {
                 $user->SetPassword($data['password']);
+            } else {
+                die("111111");
             }
             $userMapper->update($user);
         }

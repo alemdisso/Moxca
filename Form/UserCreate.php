@@ -21,6 +21,7 @@ class Moxca_Form_UserCreate extends Zend_Form
               ))
             ->setOptions(array('class' => 'Full alpha omega'))
             ->setRequired(true)
+            ->addErrorMessage(_("#Name is required"))
             ->addValidator($nameValidator)
             ->addFilter('StringTrim')
                 ;
@@ -36,6 +37,7 @@ class Moxca_Form_UserCreate extends Zend_Form
                   array('Label', array('tag' => 'div', 'tagClass' => 'one column Right')),
               ))
               ->setOptions(array('class' => 'Full alpha omega'))
+                ->addErrorMessage(_("#Role is required"))
               ->setRequired(true);
         $rolesObj = new Moxca_Access_Roles();
         $roles = $rolesObj->AllRoles();
@@ -55,6 +57,7 @@ class Moxca_Form_UserCreate extends Zend_Form
                   array('Label', array('tag' => 'div', 'tagClass' => 'three columns alpha Right')),
               ))
             ->setOptions(array('class' => 'Full alpha omega'))
+                ->addErrorMessage(_("#Login is required"))
             ->setRequired(true)
             ->addValidator($loginValidator)
             ->addFilter('StringTrim')
@@ -71,6 +74,7 @@ class Moxca_Form_UserCreate extends Zend_Form
                   array(array('data' => 'HtmlTag'), array('tagClass' => 'div', 'class' => 'two columns')),
                   array('Label', array('tag' => 'div', 'tagClass' => 'one column Right')),
               ))
+                ->addErrorMessage(_("#Password is required"))
             ->setOptions(array('class' => 'Full alpha omega'))
             ->setRequired(true)
             ->addValidator($passwordValidator)
@@ -89,6 +93,7 @@ class Moxca_Form_UserCreate extends Zend_Form
                   array('Label', array('tag' => 'div', 'tagClass' => 'one column Right')),
               ))
             ->setOptions(array('class' => 'Full alpha omega'))
+                ->addErrorMessage(_("#Email is required"))
             ->setRequired(true)
             ->addValidator($emailValidator)
             ->addFilter('StringTrim')
