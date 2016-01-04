@@ -1,6 +1,9 @@
 <?php
 class Moxca_Util_Resize {
 
+    // *** thanks to Jarrod Oberto at
+    // ***  http://code.tutsplus.com/tutorials/image-resizing-made-easy-with-php--net-10362
+    
     private $image;
     private $width;
     private $height;
